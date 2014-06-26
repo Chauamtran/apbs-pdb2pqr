@@ -124,7 +124,7 @@ int main()
 		ffmodel,	// ffmodel
 		1.5828,		// sigmas
 		0.1554,		// epsilonw
-		1,			// vdwdispersion
+		0,			// vdwdispersion
 		1.90,		// extvalue
 		// 0,		// iprec
 		// 10,		// istep

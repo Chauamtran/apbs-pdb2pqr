@@ -1,3 +1,5 @@
+kts          -9.81
+imidazole    -9.81
 gly          -8.84
 benzylb      -2.38
 benzylc      -1.93
@@ -14,4 +16,3 @@ ethy         -6.34
 ditho        -3.54
 diethyls     -1.43
 phenyl       -4.08
-imidazole    -9.81

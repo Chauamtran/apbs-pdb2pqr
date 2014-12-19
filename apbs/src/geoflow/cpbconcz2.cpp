@@ -116,12 +116,19 @@ int numberOfLines(std::string fileName) {
 }
 
 void normalizeSurfuAndEps(Mat<>& surfu, Mat<>& eps, double epsilons,
-		double epsilonp)
-{
+		double epsilonp) {
+
 	for (size_t i = 0; i < surfu.size(); i++) {
-		if (surfu[i] > 1000.0) { surfu[i] = 1000.0; }
-		if (surfu[i] < 0.0) { surfu[i] = 0.0; }
-		eps[i] = epsilonp + (epsilons - epsilonp) * ((1000.0 - surfu[i])/1000.0 );
+		if (surfu[i] > 1000.0) {
+			surfu[i] = 1000.0;
+		}
+
+		if (surfu[i] < 0.0) {
+			surfu[i] = 0.0;
+		}
+
+		eps[i] = epsilonp + (epsilons - epsilonp) *
+			((1000.0 - surfu[i])/1000.0 );
 	}
 }
 
@@ -193,7 +200,8 @@ size_t loadData(std::ifstream& f, //<i
 	std::fill(ljepsilon, ljepsilon + MAXATOMS, 0.0);
 
 	while (atomFile >> xyzr[natm][0]) {
-		atomFile >> xyzr[natm][1] >> xyzr[natm][2] >> xyzr[natm][3] >> pqr[natm];
+		atomFile >> xyzr[natm][1] >> xyzr[natm][2] >> xyzr[natm][3] >>
+			pqr[natm];
 		if (ffmodel != 1) {
 			atomFile >> ljepsilon[natm];
 		}
@@ -241,6 +249,9 @@ GeoflowOutput geoflowSolvation(double xyzr[MAXATOMS][XYZRWIDTH], size_t natm,
 	comdata.deltax = dx;
 	comdata.deltay = dy;
 	comdata.deltaz = dz;
+	comdata.dcel = 0.25;
+
+	// This seems to be  a really goofy way of finding 𝜋.
 	comdata.pi = acos(-1.0);
 
 	lj.ffmodel = ffmodel;
@@ -250,14 +261,10 @@ GeoflowOutput geoflowSolvation(double xyzr[MAXATOMS][XYZRWIDTH], size_t natm,
 	lj.sigmas = sigmas;
 	lj.density = density;
 	lj.epsilonw = epsilonw;
-	// uberfoo
-	std::cout << "density = " << density << std::endl;
-	std::cout << "gama = " << gama << std::endl;
 	lj.roro = density / gama;
-	std::cout << "roro = " << lj.roro << std::endl;
-	double potcoe = 1.0 / gama;
 	lj.conms = pres / gama;
-	std::cout << "conms = " << lj.conms << std::endl;
+
+	double potcoe = 1.0 / gama;
 
 	if(ffmodel == 1) {
 //        std::replace_if(xyzr, numbers+6, bind1st(equal_to<int>(),0) );
@@ -276,6 +283,10 @@ GeoflowOutput geoflowSolvation(double xyzr[MAXATOMS][XYZRWIDTH], size_t natm,
 		chargedist(xyzr, pqr, charget, corlocqt, loc_qt, iatm);
 	}
 
+	//
+	// comdata.{x,y,z}c is not used in this code.  It's in the Fortran code,
+	// but even there it seems to be a nop, with the given input parameters.
+	//
 	int nx = comdata.nx, ny = comdata.ny, nz = comdata.nz;
 	comdata.xc.resize(nx);
 	for (int i=0; i<nx; i++) {
@@ -308,8 +319,9 @@ GeoflowOutput geoflowSolvation(double xyzr[MAXATOMS][XYZRWIDTH], size_t natm,
 		iloop++;
 		double deltat = 0; //this is wrong for adi...
 		if (!iadi) {
-			deltat =  pow(dx*dy*dz, 2.0/3.0)/4.5;
+			deltat = pow(dx*dy*dz, 2.0/3.0)/4.5;
 		}
+		std::cout << "deltat = " << deltat << std::endl;
 		if (ipath == 0) /* will always be true, but this is how
 				  * it was in the original F90 code.
 				  * TODO: rewrite this to remove the ipath variable (?) */ {
@@ -369,14 +381,18 @@ GeoflowOutput geoflowSolvation(double xyzr[MAXATOMS][XYZRWIDTH], size_t natm,
 		soleng1 = soleng2 = 0.0;
 		computeSoleng(soleng1, phi, charget, loc_qt);
 		computeSoleng(soleng2, phivoc, charget, loc_qt);
+		std::cout << "soleng1 = " << soleng1 << std::endl;
+		std::cout << "soleng2 = " << soleng2 << std::endl;
+		std::cout << "soleng2 is too small!!" << std::endl;
 		elec = (soleng1 - soleng2) * MAGIC_FOO;
 		solv[iloop - 1] = elec + gama * (area + volume * lj.conms + attint *
 				lj.roro);
 		if (iloop > 1) {
 			diffEnergy = fabs((solv[iloop - 1] - solv[iloop - 2]));
 		}
-		std::cout << "diffEnergy = " << diffEnergy << std::endl;
+		std::cout << "solv[iloop-2] = " << solv[iloop-2] << std::endl;
 		std::cout << "solv[iloop-1] = " << solv[iloop-1] << std::endl;
+		std::cout << "diffEnergy = " << diffEnergy << std::endl;
 	}
 
 
@@ -585,4 +601,3 @@ void pbconcz2(
 				sigmas, density, epsilonw);
 	}
 }
-

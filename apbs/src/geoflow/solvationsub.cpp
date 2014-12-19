@@ -53,13 +53,27 @@
 /// @endverbatim
 
 #include <cmath>
+#include <iostream>
 #include <valarray>
 
 #include "Mat.h"
 #include "modules.h"
 
+/*
+ * - xyzr contains the position and radius of each atom in the molecule.  Each
+ *   atom's position (x,y,z) is stored in the first three elements and it's
+ *   radius as the fourth element.
+ * - chratm is an array that contains the charge of each atom indexed by atom as
+ *    xyzr.  Note that this is called pqr in other parts of the code.
+ * - charget is a matrix of size (natm, 8)
+ * - corlocqt is a matrix of size (natm, 8, 3)
+ * - loc_qt is a matrix of size (natm, 8, 3)
+ * - iatm is the index of the atom for which we want the charge distribution
+ *   calculated.
+ */
 void chargedist(double xyzr[MAXATOMS][XYZRWIDTH],
-double* chratm, Mat<>& charget, Mat<>& corlocqt, Mat<size_t>& loc_qt, size_t iatm){
+double* chratm, Mat<>& charget, Mat<>& corlocqt, Mat<size_t>& loc_qt,
+		size_t iatm){
 	double x_q = xyzr[iatm-1][0];
 	double y_q = xyzr[iatm-1][1];
 	double z_q = xyzr[iatm-1][2];
@@ -68,6 +82,9 @@ double* chratm, Mat<>& charget, Mat<>& corlocqt, Mat<size_t>& loc_qt, size_t iat
 	size_t i_q = inverx(x_q);
 	int j_q = invery(y_q);
 	int k_q = inverz(z_q);
+
+	// std::cout << x_q << "," << y_q << "," << z_q << " " << i_q << "," << j_q
+	// 	<< "," << k_q << std::endl;
 
 
 	Mat<size_t> loc_q(8,3);
@@ -84,13 +101,23 @@ double* chratm, Mat<>& charget, Mat<>& corlocqt, Mat<size_t>& loc_qt, size_t iat
 				corlocq(ind,1) = xvalue(ind_i);
 				corlocq(ind,2) = yvalue(ind_j);
 				corlocq(ind,3) = zvalue(ind_k);
+				// std::cout << "ind: " << ind << std::endl;
+				// std::cout << "corlocq" << std::endl
+				// 	<< corlocq(ind, 1) << ","
+				// 	<< corlocq(ind, 2) << ","
+				// 	<< corlocq(ind, 3) << std::endl;
 
 				loc_q(ind,1) = ind_i;
 				loc_q(ind,2) = ind_j;
 				loc_q(ind,3) = ind_k;
+				// std::cout << "loc_q" << std::endl
+				// 	<< loc_q(ind, 1) << ","
+				// 	<< loc_q(ind, 2) << ","
+				// 	<< loc_q(ind, 3) << std::endl;
 			}
 		}
 	}
+
 
 	double x = xvalue(i_q);
 	double y = yvalue(j_q);

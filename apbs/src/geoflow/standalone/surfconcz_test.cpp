@@ -1,6 +1,6 @@
-///  @file    subfunction.cpp
-///  @author  Andrew Stevens, Kyle Monson, Zhan Chen, Guowei Wei
-///  @brief sets up the source function
+///  @file    surfconcz_test.cpp
+///  @author  Keith T. Star
+///  @brief Unit tests for Geometric Flow
 ///  @ingroup Geoflow
 ///  @version $Id$
 ///  @attention
@@ -13,7 +13,7 @@
 ///
 ///  Additional contributing authors listed in the code documentation.
 ///
-/// Copyright (c) 2010-2012 Battelle Memorial Institute. Developed at the
+/// Copyright (c) 2010-2014 Battelle Memorial Institute. Developed at the
 /// Pacific Northwest National Laboratory, operated by Battelle Memorial
 /// Institute, Pacific Northwest Division for the U.S. Department of Energy.
 ///
@@ -52,74 +52,56 @@
 ///
 /// @endverbatim
 
-#include "Mat.h"
-#include "modules.h"
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
 
-#include <iostream>
+#include "../modules.h"
 
-double qbboundary(size_t natm, double x,double y,double z,
-		double xyzr[MAXATOMS][XYZRWIDTH], double* pqr, double epsilonsp)
-{
-	double vbdn = 0;
-	for (size_t a = 0; a < natm; ++a) {
-		double x_q = x - xyzr[a][1];
-		double y_q = y - xyzr[a][2];
-		double z_q = z - xyzr[a][3];
-		double q_q = pqr[a];
-		double rr = sqrt(dot(x_q, y_q, z_q));
-		vbdn += q_q/(epsilonsp*rr);
-	}
-	return vbdn;
+/*
+ * We test this function against results obtained from the original Fortran
+ * code.
+ */
+
+class DomainIni : public testing::Test {
+protected:
+	void SetUp() {
+		// These are some lovely globals...  :-/
+		comdata.deltax = 2.5;
+		comdata.deltay = 2.5;
+		comdata.deltaz = 2.5;
+		// comdata.dcel = 0.25;
+		comdata.pi = acos(-1.0);
+
+		// 1.90 magic?  It's called EXTVALUE.
+		domainini(xyzr, natm, 1.90);
+	};
+
+	static const size_t natm = 3, foo = 8, bar = 3, baz = 4;
+
+	// These are the first three atoms from the imidazole molecule file.
+	double xyzr[natm][baz] = {
+		{0.00, 0.00, 0.00, 1.87},
+		{1.372, 0.00, 0.00, 1.40},
+		{1.764, 1.292, 0.00, 1.87}};
+};
+
+TEST_F(DomainIni, TestDimensions) {
+	EXPECT_EQ(55, comdata.nx);
+	EXPECT_EQ(53, comdata.ny);
+	EXPECT_EQ(48, comdata.nz);
 }
 
+TEST_F(DomainIni, TestLeftandRight) {
+	EXPECT_EQ(-5.9, comdata.xleft);
+	EXPECT_EQ(7.6, comdata.xright);
 
-double qbinterior(double x,double y,double z, Mat<>& charget, Mat<>& corlocqt)
-{
-	double fp = 0;
-	for (size_t a = 1; a <= charget.nx(); ++a) {
-		for (size_t ii = 1; ii <= charget.ny(); ++ii) {
-			double xc = x - corlocqt(a,ii,1);
-			double yc = y - corlocqt(a,ii,2);
-			double zc = z - corlocqt(a,ii,3);
-			if ( dot(xc,yc,zc) <= 1e-13) {
-				fp -= 4.0*comdata.pi*charget(a,ii)/
-						(comdata.deltax*comdata.deltay*comdata.deltaz);
-			}
-		}
-	}
+	EXPECT_EQ(-5.9, comdata.yleft);
+	EXPECT_EQ(7.1, comdata.yright);
 
-	return fp;
+	EXPECT_EQ(-5.9, comdata.zleft);
+	EXPECT_EQ(5.85, comdata.zright);
 }
 
-double qb(size_t i,size_t j,size_t k, double xyzr[MAXATOMS][XYZRWIDTH],
-		double* pqr, Mat<>& charget, Mat<>& corlocqt, double epsilonsp)
-{
-	double x = xvalue(i);
-	double y = yvalue(j);
-	double z = zvalue(k);
-	if(i < 2 || i > comdata.nx-1 ||
-			j < 2 || j > comdata.ny-1 ||
-			k < 2 || k > comdata.nz-1) {
-		return qbboundary(charget.nx(), x,y,z, xyzr, pqr, epsilonsp);
-	} else {
-		return qbinterior(x,y,z, charget, corlocqt);
-	}
-}
-
-void seteqb(Mat<>& bg, double xyzr[MAXATOMS][XYZRWIDTH], double* pqr,
-		Mat<>& charget, Mat<>& corlocqt, double epsilonsp)
-{
-	double sum = 0.0;
-	for (size_t i = 1; i <= comdata.nx; ++i) {
-		for (size_t j = 1; j <= comdata.ny; ++j) {
-			for (size_t k = 1; k <= comdata.nz; ++k) {
-				double fp = qb(i,j,k,xyzr,pqr,charget,corlocqt,epsilonsp);
-				int ijk = (i-1)*comdata.ny*comdata.nz + (j-1)*comdata.nz + k - 1;
-				bg[ijk] = fp;
-				sum += fp;
-			}
-		}
-	}
-
-	std::cout << "sum bg = " << sum << std::endl;
+TEST_F(DomainIni, TestDcel) {
+	EXPECT_EQ(0.25, comdata.dcel);
 }

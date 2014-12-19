@@ -67,7 +67,10 @@ struct Comdata
 		yleft, yright,
 		zleft, zright,
 		deltax, deltay, deltaz,
+		// dcel isn't initialized.  From what I can tell, it used to be the
+		// step size, and Andrew broke it out into delta{x,y,z} above.
 		dcel, pi;
+	// These vectors aren't used.
 	std::vector<double> xc, yc, zc;
 };
 extern Comdata comdata;

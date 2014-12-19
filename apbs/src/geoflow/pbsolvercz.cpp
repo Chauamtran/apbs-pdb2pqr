@@ -146,7 +146,12 @@ void pbsolver(Mat<>& eps, Mat<>& phi, Mat<>& bgf, double tol, int iter)
 	solver.setMaxIterations(iter);
 	solver.setTolerance(tol);
 
-	phi_flat = solver.solveWithGuess(bgf.baseInterface(), phi_flat);
+	// KTS Note -- I remember being here writing the unit tests, and thinking
+	// that this may have had something to do with the difference in the elec
+	// energies.  I don't remember the details, but it's something to do with
+	// the Eigen solver being different from what is in the Fortran code.
+	// phi_flat = solver.solveWithGuess(bgf.baseInterface(), phi_flat);
+	phi_flat = solver.solve(bgf.baseInterface());
 
 	for(size_t i = 1; i <= nx; ++i) {
 		for(size_t j = 1; j <= ny; ++j) {
@@ -157,4 +162,3 @@ void pbsolver(Mat<>& eps, Mat<>& phi, Mat<>& bgf, double tol, int iter)
 		}
 	}
 }
-

@@ -57,7 +57,6 @@
 #include <valarray>
 
 #include "modules.h"
-#include "Mat.h"
 
 double left(const std::valarray<double>& pr, double h, double ev)
 {
